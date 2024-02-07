@@ -1,69 +1,75 @@
 import fs from 'fs'
 
 export const chooseRandom = (array = [], numItems) => {
-  if (array.length <= 1) {
-    return array.slice() 
-  }
+  
+    if (array.length <= 1) return array;
 
-  if (numItems < 1 || numItems > array.length) {
-    numItems = Math.floor(Math.random() * (array.length)) + 1
-  }
+    if (numItems < 1 || numItems > array.length) {
+        numItems = Math.floor(Math.random() * array.length) + 1;
+    }
 
-  const shuffledArray = array.slice().sort(() => Math.random() - 0.5)
+    const newArray = array.slice();
 
-  return shuffledArray.slice(0, numItems)
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+
+    return newArray.slice(0, numItems);
 };
 
 
 export const createPrompt = ({ numQuestions = 1, numChoices = 2 } = {}) => {
 
-  numQuestions = Math.max(1, numQuestions)
-  numChoices = Math.max(2, numChoices)
+    const prompts = [];
 
-  const prompts = [];
+    for (let i = 1; i <= numQuestions; i++) {
+        prompts.push({
+            type: 'input',
+            name: `question-${i}`,
+            message: `Enter question ${i}`
+        });
 
-  for (let q = 1; q <= numQuestions; q++) {
-    const question = {
-      type: 'input',
-      name: `question-${q}`,
-      message: `Enter question ${q}`
+        for (let j = 1; j <= numChoices; j++) {
+            prompts.push({
+                type: 'input',
+                name: `question-${i}-choice-${j}`,
+                message: `Enter answer choice ${j} for question ${i}`
+            });
+        }
     }
-    prompts.push(question)
 
-    for (let c = 1; c <= numChoices; c++) {
-      const choice = {
-        type: 'input',
-        name: `question-${q}-choice-${c}`,
-        message: `Enter answer choice ${c} for question ${q}`
-      };
-      prompts.push(choice)
-    }
-  }
-
-  return prompts
+    return prompts;
 };
 
 
 export const createQuestions = (obj = {}) => {
-  const questions = []
 
-  for (let key in obj) {
-      const questionName = key
-      const questionData = obj[key]
+  const questions = [];
 
-      const { question, choices } = questionData
+  // Extract unique question numbers
+  const questionNumbers = [...new Set(Object.keys(obj).map(key => key.split('-')[1]))];
 
-      const questionObject = {
-        type: 'list',
-        name: questionName,
-        message: question,
-        choices: choices
+  questionNumbers.forEach(questionNumber => {
+      const questionKey = `question-${questionNumber}`;
+      const question = obj[questionKey];
+      const choices = [];
+
+      for (const key in obj) {
+          if (key.startsWith(questionKey) && key !== questionKey) {
+              choices.push(obj[key]);
+          }
       }
 
-      questions.push(questionObject)
-  }
+      questions.push({
+          type: 'list',
+          name: questionKey,
+          message: question,
+          choices: choices
+      });
+  });
 
-  return questions
+  return questions;
 };
 
 
